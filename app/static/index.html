@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="mzansi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FixZA — SA's artisans. One WhatsApp away.</title>
+<meta name="description" content="FixZA connects you with verified South African plumbers, electricians, painters and more — all through WhatsApp. No app to download.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============ THEMES ============ */
+:root, [data-theme="mzansi"]{
+  --bg:#faf5ec; --bg2:#f3e9d7; --surface:#ffffff; --ink:#2b1d12; --ink2:#6b5844;
+  --brand:#c2410c;            /* terracotta */
+  --brand2:#0e7a4e;           /* protea-leaf green */
+  --accent:#e6a817;           /* ochre gold */
+  --whatsapp:#25d366;
+  --card-border:rgba(43,29,18,.08);
+  --hero-grad:linear-gradient(135deg,#c2410c 0%,#e6a817 55%,#0e7a4e 120%);
+  --pattern-opacity:.55;
+  --shadow:0 18px 44px rgba(120,60,10,.14);
+}
+[data-theme="dusk"]{
+  --bg:#120d16; --bg2:#1c1322; --surface:#221a2b; --ink:#f5ecff; --ink2:#b7a8c6;
+  --brand:#ff7847; --brand2:#c084fc; --accent:#ffb020; --whatsapp:#25d366;
+  --card-border:rgba(255,255,255,.08);
+  --hero-grad:linear-gradient(135deg,#3b0764 0%,#9a3412 60%,#ff7847 120%);
+  --pattern-opacity:.25;
+  --shadow:0 18px 44px rgba(0,0,0,.5);
+}
+[data-theme="global"]{
+  --bg:#f4f8fb; --bg2:#e8f0f7; --surface:#ffffff; --ink:#0c2436; --ink2:#4d6b80;
+  --brand:#0369a1; --brand2:#0e7490; --accent:#f59e0b; --whatsapp:#25d366;
+  --card-border:rgba(12,36,54,.08);
+  --hero-grad:linear-gradient(135deg,#0c4a6e 0%,#0369a1 55%,#22d3ee 120%);
+  --pattern-opacity:.3;
+  --shadow:0 18px 44px rgba(3,105,161,.14);
+}
+/* ============ BASE ============ */
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);
+  transition:background .5s,color .5s;overflow-x:hidden}
+h1,h2,h3,.logo{font-family:'Sora',sans-serif}
+a{color:inherit;text-decoration:none}
+section{max-width:1120px;margin:0 auto;padding:84px 24px}
+.eyebrow{display:inline-block;font-size:.78rem;font-weight:600;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--brand);margin-bottom:14px}
+h2{font-size:clamp(1.7rem,3.5vw,2.4rem);font-weight:800;margin-bottom:14px}
+.sub{color:var(--ink2);max-width:560px;line-height:1.65}
+
+/* ============ NAV ============ */
+nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);
+  background:color-mix(in srgb,var(--bg) 78%,transparent);
+  border-bottom:1px solid var(--card-border)}
+.nav-inner{max-width:1120px;margin:0 auto;display:flex;align-items:center;
+  justify-content:space-between;padding:14px 24px}
+.logo{font-weight:800;font-size:1.35rem}
+.logo span{color:var(--brand)}
+.logo .za{color:var(--brand2)}
+.nav-links{display:flex;gap:26px;align-items:center;font-size:.92rem;font-weight:500}
+.nav-links a:hover{color:var(--brand)}
+@media(max-width:720px){.nav-links a:not(.btn){display:none}}
+
+/* theme switcher */
+.themes{display:flex;gap:6px;background:var(--bg2);padding:5px;border-radius:99px}
+.themes button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;
+  cursor:pointer;transition:transform .2s,border-color .2s}
+.themes button:hover{transform:scale(1.15)}
+.themes button.active{border-color:var(--ink)}
+.t-mzansi{background:conic-gradient(#c2410c,#e6a817,#0e7a4e,#c2410c)}
+.t-dusk{background:conic-gradient(#3b0764,#ff7847,#ffb020,#3b0764)}
+.t-global{background:conic-gradient(#0c4a6e,#22d3ee,#f59e0b,#0c4a6e)}
+
+/* ============ HERO ============ */
+.hero{position:relative;overflow:hidden;background:var(--hero-grad);color:#fff}
+.hero::before{content:"";position:absolute;inset:0;opacity:var(--pattern-opacity);
+  background-image:url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.16' stroke-width='3'%3E%3Cpath d='M0 60 L30 30 L60 60 L30 90 Z'/%3E%3Cpath d='M60 60 L90 30 L120 60 L90 90 Z'/%3E%3Cpath d='M30 0 L60 30 L90 0'/%3E%3Cpath d='M30 120 L60 90 L90 120'/%3E%3Ccircle cx='60' cy='60' r='8'/%3E%3C/g%3E%3C/svg%3E");
+  animation:drift 60s linear infinite}
+@keyframes drift{to{background-position:1200px 600px}}
+.hero-inner{position:relative;max-width:1120px;margin:0 auto;padding:96px 24px 110px;
+  display:grid;grid-template-columns:1.15fr .85fr;gap:48px;align-items:center}
+@media(max-width:880px){.hero-inner{grid-template-columns:1fr;padding-bottom:80px}}
+.hero h1{font-size:clamp(2.3rem,5.2vw,3.6rem);font-weight:800;line-height:1.12;
+  margin-bottom:20px;text-wrap:balance}
+.hero p{font-size:1.12rem;line-height:1.65;opacity:.94;max-width:520px;margin-bottom:32px}
+.badge{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.16);
+  border:1px solid rgba(255,255,255,.3);border-radius:99px;padding:7px 16px;
+  font-size:.82rem;font-weight:600;margin-bottom:22px;backdrop-filter:blur(6px)}
+.cta-row{display:flex;gap:14px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:10px;font-weight:600;border-radius:14px;
+  padding:15px 26px;font-size:1rem;transition:transform .15s,box-shadow .15s;cursor:pointer;border:none}
+.btn:hover{transform:translateY(-2px)}
+.btn-wa{background:var(--whatsapp);color:#06281a;box-shadow:0 10px 26px rgba(37,211,102,.4)}
+.btn-ghost{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.35)}
+.btn-sm{padding:9px 18px;font-size:.85rem;border-radius:10px;background:var(--brand);color:#fff}
+
+/* phone mockup */
+.phone{position:relative;width:300px;margin:0 auto;background:#0b141a;border-radius:38px;
+  padding:14px 12px;box-shadow:0 30px 80px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.15)}
+.phone .screen{background:#0b141a url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='30' cy='30' r='1.2' fill='%23ffffff' fill-opacity='.05'/%3E%3C/svg%3E");
+  border-radius:26px;padding:14px 10px 18px;min-height:430px;display:flex;flex-direction:column;gap:9px}
+.wa-head{display:flex;align-items:center;gap:10px;padding:4px 6px 10px;border-bottom:1px solid rgba(255,255,255,.08)}
+.wa-avatar{width:34px;height:34px;border-radius:50%;background:var(--hero-grad);
+  display:grid;place-items:center;font-size:.75rem;font-weight:800;color:#fff;font-family:'Sora'}
+.wa-head b{color:#e9edef;font-size:.85rem;display:block}
+.wa-head small{color:#8696a0;font-size:.68rem}
+.bubble{max-width:86%;padding:8px 11px;border-radius:10px;font-size:.74rem;line-height:1.45;
+  color:#e9edef;opacity:0;transform:translateY(10px);animation:pop .5s forwards}
+.bubble.in{background:#202c33;border-top-left-radius:2px;align-self:flex-start}
+.bubble.out{background:#005c4b;border-top-right-radius:2px;align-self:flex-end}
+.bubble b{color:#fff}
+@keyframes pop{to{opacity:1;transform:none}}
+
+/* ============ TRADES ============ */
+.trades-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px;margin-top:36px}
+.trade{background:var(--surface);border:1px solid var(--card-border);border-radius:18px;
+  padding:22px 16px;text-align:center;transition:transform .2s,box-shadow .2s}
+.trade:hover{transform:translateY(-4px);box-shadow:var(--shadow)}
+.trade .ico{font-size:1.9rem;display:block;margin-bottom:10px}
+.trade b{font-size:.9rem}
+
+/* ============ STEPS ============ */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:40px}
+.step{background:var(--surface);border:1px solid var(--card-border);border-radius:20px;
+  padding:28px 24px;position:relative;box-shadow:0 6px 18px rgba(0,0,0,.04)}
+.step .num{position:absolute;top:-16px;left:22px;width:34px;height:34px;border-radius:10px;
+  background:var(--brand);color:#fff;display:grid;place-items:center;font-weight:800;font-family:'Sora'}
+.step h3{margin:10px 0 8px;font-size:1.05rem}
+.step p{color:var(--ink2);font-size:.9rem;line-height:1.6}
+
+/* ============ TIERS ============ */
+.tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;margin-top:40px}
+.tier{background:var(--surface);border:1px solid var(--card-border);border-radius:22px;
+  padding:30px 26px;transition:transform .2s}
+.tier:hover{transform:translateY(-5px);box-shadow:var(--shadow)}
+.tier.featured{border:2px solid var(--accent);position:relative}
+.tier.featured::after{content:"MOST TRUSTED";position:absolute;top:-12px;right:20px;
+  background:var(--accent);color:#241a02;font-size:.62rem;font-weight:800;
+  letter-spacing:.1em;padding:4px 12px;border-radius:99px}
+.tier .medal{font-size:2rem}
+.tier h3{margin:12px 0 4px}
+.tier ul{list-style:none;margin-top:14px}
+.tier li{padding:7px 0;font-size:.88rem;color:var(--ink2);border-bottom:1px dashed var(--card-border)}
+.tier li::before{content:"✓ ";color:var(--brand2);font-weight:700}
+
+/* ============ STATS ============ */
+.stats{background:var(--bg2);border-radius:28px;display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;padding:40px 30px;text-align:center}
+.stat b{font-family:'Sora';font-size:2rem;color:var(--brand);display:block}
+.stat span{color:var(--ink2);font-size:.85rem}
+
+/* ============ FOOTER CTA ============ */
+.final{background:var(--hero-grad);border-radius:30px;color:#fff;text-align:center;
+  padding:64px 30px;position:relative;overflow:hidden}
+.final::before{content:"";position:absolute;inset:0;opacity:.3;
+  background-image:url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' stroke='%23ffffff' stroke-opacity='.2' stroke-width='3'%3E%3Cpath d='M0 60 L30 30 L60 60 L30 90 Z'/%3E%3Cpath d='M60 60 L90 30 L120 60 L90 90 Z'/%3E%3C/g%3E%3C/svg%3E")}
+.final *{position:relative}
+.final h2{margin-bottom:12px}
+.final p{opacity:.92;margin-bottom:28px}
+footer{text-align:center;color:var(--ink2);font-size:.82rem;padding:34px 20px}
+footer b{color:var(--ink)}
+
+.reveal{opacity:0;transform:translateY(26px);transition:opacity .7s,transform .7s}
+.reveal.on{opacity:1;transform:none}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <div class="logo">Fix<span>Z</span><span class="za">A</span></div>
+    <div class="nav-links">
+      <a href="#how">How it works</a>
+      <a href="#trades">Trades</a>
+      <a href="#trust">Trust &amp; safety</a>
+      <div class="themes" title="Switch theme">
+        <button class="t-mzansi active" data-theme="mzansi" title="Mzansi — African earth"></button>
+        <button class="t-dusk" data-theme="dusk" title="Safari Dusk — dark"></button>
+        <button class="t-global" data-theme="global" title="Global — ocean blue"></button>
+      </div>
+      <a class="btn btn-sm" href="https://wa.me/27600000000?text=Hi" target="_blank" rel="noopener">Chat now</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="badge">🇿🇦 Proudly South African · Cape Town pilot</div>
+      <h1>SA's artisans.<br>One WhatsApp away.</h1>
+      <p>No apps. No call centres. Just message us like you message a friend —
+         and get matched with a <b>verified</b> plumber, electrician or painter
+         near you in under a minute.</p>
+      <div class="cta-row">
+        <a class="btn btn-wa" href="https://wa.me/27600000000?text=Hi" target="_blank" rel="noopener">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.4 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .3-3.4-.7-2.9-1.1-4.7-4-4.9-4.2-.1-.2-1.1-1.5-1.1-2.9s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5s.8 1.9.8 2c.1.1.1.3 0 .5l-.4.6c-.2.2-.3.4-.1.7.2.3.8 1.4 1.8 2.2 1.3 1.1 2.3 1.5 2.7 1.6.3.2.5.1.7-.1l.9-1c.2-.3.4-.2.7-.1l2 1c.3.1.5.2.6.4 0 .1 0 .7-.3 1.4Z"/></svg>
+          Start on WhatsApp
+        </a>
+        <a class="btn btn-ghost" href="#how">See how it works</a>
+      </div>
+    </div>
+    <div class="phone">
+      <div class="screen">
+        <div class="wa-head">
+          <div class="wa-avatar">FZ</div>
+          <div><b>FixZA</b><small>✔ verified business · online</small></div>
+        </div>
+        <div class="bubble out" style="animation-delay:.4s">My geyser is leaking 😰</div>
+        <div class="bubble in" style="animation-delay:1.2s">Got it — you need a <b>Plumber</b>. 🔧<br>📍 Share your location or type your suburb.</div>
+        <div class="bubble out" style="animation-delay:2.1s">Claremont</div>
+        <div class="bubble in" style="animation-delay:3s"><b>Top plumbers near Claremont:</b><br>1. Sipho N. — 🥇 Gold · 4.8⭐ · 2.1 km<br>2. Lindiwe S. — 🥈 Silver · 4.6⭐ · 6 km<br>3. Riaan v W. — 🥈 Silver · 4.5⭐ · 9 km<br><br>Reply <b>1</b>, <b>2</b> or <b>3</b> to book.</div>
+        <div class="bubble out" style="animation-delay:3.9s">1</div>
+        <div class="bubble in" style="animation-delay:4.7s">✅ <b>Booked!</b> Sipho will contact you shortly.<br>Ref: <b>FZ-00041</b></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="how" class="reveal">
+  <span class="eyebrow">How it works</span>
+  <h2>From "help!" to booked in four messages</h2>
+  <p class="sub">Behind the chat: AI classifies your problem, our matching engine scores
+     every verified artisan nearby on distance, rating, verification tier and track record —
+     then hands you the top three.</p>
+  <div class="steps">
+    <div class="step"><div class="num">1</div><h3>💬 Describe it</h3><p>"No power in my kitchen." Plain language — our AI figures out the trade and urgency.</p></div>
+    <div class="step"><div class="num">2</div><h3>📍 Drop a pin</h3><p>Share your location or type your suburb. We only match artisans within 30 km.</p></div>
+    <div class="step"><div class="num">3</div><h3>🏆 Pick your pro</h3><p>Top 3 verified artisans, ranked — with ratings, badges and distance. You choose.</p></div>
+    <div class="step"><div class="num">4</div><h3>✅ Get it fixed</h3><p>Your artisan contacts you directly. Rate the job afterwards — great work rises to the top.</p></div>
+  </div>
+</section>
+
+<section id="trades" class="reveal">
+  <span class="eyebrow">Trades on the platform</span>
+  <h2>Whatever's broken, we know someone</h2>
+  <div class="trades-grid">
+    <div class="trade"><span class="ico">🔧</span><b>Plumbing</b></div>
+    <div class="trade"><span class="ico">⚡</span><b>Electrical</b></div>
+    <div class="trade"><span class="ico">🪚</span><b>Carpentry</b></div>
+    <div class="trade"><span class="ico">🎨</span><b>Painting</b></div>
+    <div class="trade"><span class="ico">🧺</span><b>Appliances</b></div>
+    <div class="trade"><span class="ico">🧱</span><b>Building</b></div>
+    <div class="trade"><span class="ico">🏠</span><b>Roofing</b></div>
+    <div class="trade"><span class="ico">🔐</span><b>Locksmith</b></div>
+    <div class="trade"><span class="ico">🌿</span><b>Garden</b></div>
+    <div class="trade"><span class="ico">◼️</span><b>Tiling</b></div>
+  </div>
+</section>
+
+<section id="trust" class="reveal">
+  <span class="eyebrow">Trust &amp; safety</span>
+  <h2>Every artisan is verified. Trust is the product.</h2>
+  <p class="sub">Artisans pay nothing upfront — verification costs are recovered from their
+     first completed jobs. All checks are POPIA-compliant with full consent.</p>
+  <div class="tiers">
+    <div class="tier"><span class="medal">🥉</span><h3>Bronze Verified</h3>
+      <ul><li>SA ID verified</li><li>Mobile number verified</li><li>Selfie / photo match</li><li>Bank account verified</li></ul></div>
+    <div class="tier"><span class="medal">🥈</span><h3>Silver Verified</h3>
+      <ul><li>Everything in Bronze</li><li>Criminal record check</li><li>Address verification</li><li>Reference checks</li></ul></div>
+    <div class="tier featured"><span class="medal">🥇</span><h3>Gold Verified</h3>
+      <ul><li>Everything in Silver</li><li>Trade qualification verified</li><li>Professional registration</li><li>Insurance confirmed</li><li>Proven platform history</li></ul></div>
+  </div>
+</section>
+
+<section class="reveal">
+  <div class="stats">
+    <div class="stat"><b data-count="25">0</b><span>Verified artisans (pilot)</span></div>
+    <div class="stat"><b data-count="10">0</b><span>Trades covered</span></div>
+    <div class="stat"><b data-count="30">0</b><span>km matching radius</span></div>
+    <div class="stat"><b data-count="60">0</b><span>seconds to a match</span></div>
+  </div>
+</section>
+
+<section class="reveal">
+  <div class="final">
+    <h2>Something broken at home?</h2>
+    <p>Don't Google. Don't phone around. Just WhatsApp us.</p>
+    <a class="btn btn-wa" href="https://wa.me/27600000000?text=Hi" target="_blank" rel="noopener">Message FixZA now</a>
+  </div>
+</section>
+
+<footer>
+  <b>FixZA</b> · SA's artisans. One WhatsApp away. · Cape Town, South Africa<br>
+  Built on the WhatsApp Business Platform · POPIA compliant · © 2026 FixZA (Pty) Ltd
+</footer>
+
+<script>
+// theme switcher (persisted)
+const buttons=[...document.querySelectorAll('.themes button')];
+const saved=localStorage.getItem('fixza-theme');
+if(saved){document.documentElement.dataset.theme=saved;
+  buttons.forEach(b=>b.classList.toggle('active',b.dataset.theme===saved));}
+buttons.forEach(b=>b.addEventListener('click',()=>{
+  document.documentElement.dataset.theme=b.dataset.theme;
+  localStorage.setItem('fixza-theme',b.dataset.theme);
+  buttons.forEach(x=>x.classList.toggle('active',x===b));
+}));
+
+// scroll reveal
+const io=new IntersectionObserver(es=>es.forEach(e=>{
+  if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}
+}),{threshold:.12});
+document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+// stat counters
+const cio=new IntersectionObserver(es=>es.forEach(e=>{
+  if(!e.isIntersecting)return;cio.unobserve(e.target);
+  const el=e.target,target=+el.dataset.count;let n=0;
+  const step=()=>{n=Math.min(target,n+Math.max(1,target/40));
+    el.textContent=Math.round(n);if(n<target)requestAnimationFrame(step);};
+  step();
+}),{threshold:.5});
+document.querySelectorAll('[data-count]').forEach(el=>cio.observe(el));
+</script>
+</body>
+</html>
