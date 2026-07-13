@@ -161,3 +161,47 @@ def test_regular_customer_still_asked_for_location(db):
     handle_message(db, _msg("hi"))
     reply = handle_message(db, _msg("leaking tap"))[0]
     assert "Where are you" in reply
+
+
+# --- artisan flow ---
+
+def test_artisan_flow(db):
+    from app.artisan_flow import handle_artisan_message
+    artisan = db.query(Artisan).filter_by(trade="plumbing").first()
+
+    # Test accept
+    job1 = Job(customer_id=1, artisan_id=artisan.id, description="test1",
+               trade="plumbing", lat=-33.93, lng=18.43, status="booked")
+    db.add(job1)
+    db.commit()
+    reply = handle_artisan_message(db, artisan.wa_id, "ACCEPT")
+    assert "accepted" in reply.lower()
+    db.commit()
+    job1 = db.get(Job, job1.id)
+    assert job1.status == "accepted"
+
+    # Test decline on a new job
+    job2 = Job(customer_id=1, artisan_id=artisan.id, description="test2",
+               trade="plumbing", lat=-33.93, lng=18.43, status="booked")
+    db.add(job2)
+    db.commit()
+    reply = handle_artisan_message(db, artisan.wa_id, "DECLINE")
+    assert "declined" in reply.lower() or "decline" in reply.lower()
+    db.commit()
+    job2 = db.get(Job, job2.id)
+    assert job2.status == "cancelled"
+
+
+def test_customer_review(db):
+    from app.customer_reviews import submit_review
+    artisan = db.query(Artisan).first()
+    initial_jobs = artisan.jobs_completed
+    job = Job(customer_id=1, artisan_id=artisan.id, description="test",
+              trade="plumbing", lat=-33.93, lng=18.43, status="completed")
+    db.add(job)
+    db.flush()
+    reply = submit_review(db, job.id, 5, "Excellent work!")
+    assert "Thanks" in reply
+    artisan = db.get(Artisan, artisan.id)
+    assert artisan.rating == 5.0
+    assert artisan.jobs_completed == initial_jobs + 1

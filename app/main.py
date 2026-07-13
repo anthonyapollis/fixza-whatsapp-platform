@@ -17,7 +17,9 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from . import config
+from .artisan_flow import handle_artisan_message, send_job_offer
 from .conversation import handle_message
+from .customer_reviews import submit_review
 from .db import get_db, init_db
 from .models import Agency, Artisan, Customer, Job, MessageLog, utcnow
 from .whatsapp import extract_messages, send_text, verify_signature
@@ -55,6 +57,17 @@ def verify_webhook(
     if hub_mode == "subscribe" and hub_verify_token == config.WHATSAPP_VERIFY_TOKEN:
         return Response(content=hub_challenge, media_type="text/plain")
     raise HTTPException(status_code=403, detail="Verification failed")
+
+
+@app.post("/mock/send", include_in_schema=False)
+def mock_send(body: dict, db: Session = Depends(get_db)) -> dict:
+    """Test endpoint: POST {\"from\": \"wa_id\", \"text\": \"message\"} to test locally."""
+    from_wa = body.get("from", "27831234567")
+    text = body.get("text", "")
+    msg = {"wa_id": from_wa, "name": "", "type": "text", "text": text}
+    replies = handle_message(db, msg)
+    db.commit()
+    return {"from": from_wa, "text": text, "replies": replies}
 
 
 @app.post("/webhook")
@@ -163,6 +176,14 @@ def agency_dashboard(agency_id: int, db: Session = Depends(get_db)) -> str:
 <table><tr><th>Ref</th><th>Property</th><th>Trade</th><th>Urgency</th>
 <th>Status</th><th>Artisan</th><th>Response due (SLA)</th></tr>{body_rows}</table>
 </body></html>"""
+
+
+@app.post("/review", include_in_schema=False)
+def post_review(body: dict, db: Session = Depends(get_db)) -> dict:
+    """Submit a review: {\"job_id\": 123, \"stars\": 5, \"comment\": \"Great!\"}"""
+    msg = submit_review(db, body.get("job_id"), body.get("stars", 0), body.get("comment", ""))
+    db.commit()
+    return {"message": msg}
 
 
 @app.get("/stats")
