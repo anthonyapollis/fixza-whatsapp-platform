@@ -13,8 +13,9 @@ from datetime import timedelta
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .artisan_flow import handle_artisan_message, report_no_show
 from .classifier import classify
-from .matching import find_matches
+from .matching import PRICE_RANGES, find_matches
 from .models import Artisan, ConversationSession, Customer, Job, Tenant
 from .models import utcnow
 
@@ -92,10 +93,26 @@ def _reset(session: ConversationSession) -> None:
     session.offered_artisans = ""
 
 
-def handle_message(db: Session, msg: dict) -> list[str]:
-    """Process one inbound message dict (from whatsapp.extract_messages).
+def route_message(db: Session, msg: dict) -> list[str]:
+    """Entry point for every inbound WhatsApp message.
 
-    Returns the list of reply texts to send. Caller commits the transaction.
+    A phone number is either a registered artisan or a customer/tenant —
+    never both in this MVP — so identity alone decides which conversation
+    engine handles it. This dispatch didn't exist until a live smoke test
+    caught an artisan's "DECLINE" being swallowed by the customer greeting
+    flow instead of reaching handle_artisan_message.
+    """
+    wa_id = msg["wa_id"]
+    if msg.get("type") == "text":
+        artisan = db.scalar(select(Artisan).where(Artisan.wa_id == wa_id))
+        if artisan:
+            return [handle_artisan_message(db, wa_id, msg.get("text") or "")]
+    return handle_message(db, msg)
+
+
+def handle_message(db: Session, msg: dict) -> list[str]:
+    """Process one inbound *customer/tenant* message
+    (from whatsapp.extract_messages). Returns reply texts; caller commits.
     """
     wa_id = msg["wa_id"]
     customer = _get_or_create_customer(db, wa_id, msg.get("name", ""))
@@ -110,6 +127,8 @@ def handle_message(db: Session, msg: dict) -> list[str]:
         return ["No problem, I've cancelled that. " + WELCOME]
     if lowered == "status":
         return [_status_reply(db, customer)]
+    if lowered == "noshow":
+        return [_handle_no_show(db, customer)]
     if msg.get("type") == "unsupported":
         return ["Sorry, I can only handle text and location messages for now. "
                 "Please describe your problem in a message. 🙂"]
@@ -224,8 +243,14 @@ def _present_matches(db: Session, session: ConversationSession, job: Job) -> lis
     session.offered_artisans = ",".join(str(m.artisan.id) for m in matches)
     session.state = "awaiting_choice"
 
+    price_note = ""
+    if job.trade in PRICE_RANGES:
+        low, high = PRICE_RANGES[job.trade]
+        price_note = f" (typical call-out: R{low}–R{high})"
+
     lines = [f"Here are your top {len(matches)} verified "
-             f"{TRADE_LABELS[job.trade].lower()}s near {job.suburb}:\n"]
+             f"{TRADE_LABELS[job.trade].lower()}s near {job.suburb}"
+             f"{price_note}:\n"]
     for i, m in enumerate(matches, 1):
         a = m.artisan
         stars = f"{a.rating:.1f}⭐" if a.rating else "New"
@@ -271,3 +296,20 @@ def _status_reply(db: Session, customer: Customer) -> str:
     who = f" with *{artisan.name}*" if artisan else ""
     return (f"Your latest job *FZ-{job.id:05d}* ({TRADE_LABELS.get(job.trade, job.trade)})"
             f" is *{job.status}*{who}.")
+
+
+def _handle_no_show(db: Session, customer: Customer) -> str:
+    """Customer reports their booked/accepted artisan never arrived.
+
+    See COMPETITIVE_ANALYSIS.md — no incumbent in this category gives the
+    algorithm a way to learn from a no-show; this closes that loop and
+    auto-reassigns instead of leaving the customer stranded.
+    """
+    job = db.scalar(
+        select(Job)
+        .where(Job.customer_id == customer.id, Job.status.in_(("booked", "accepted")))
+        .order_by(Job.id.desc())
+    )
+    if not job:
+        return "You don't have an active booked job to report."
+    return report_no_show(db, job)

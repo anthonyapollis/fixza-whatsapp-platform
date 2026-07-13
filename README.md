@@ -27,7 +27,18 @@ Customer ──▶ WhatsApp ──▶ Meta Cloud API ──▶ FastAPI (Render)
 - **Hybrid AI job classification** — instant keyword rules (10 trades, urgency
   detection); low-confidence messages escalate to Claude if `ANTHROPIC_API_KEY` is set.
 - **Matching engine** — haversine distance (30 km radius) + rating + verification
-  tier (🥉🥈🥇) + jobs completed, weighted into a single score.
+  tier (🥉🥈🥇) + jobs completed + **reliability score**, weighted into a single
+  documented score (no black-box ranking — see `matching.py`).
+- **Artisan-side flow** — job offers with ACCEPT / DECLINE / QUOTE / COMPLETE.
+  A decline **auto-reassigns to the next-best artisan** instead of dead-ending
+  the job, and lowers the decliner's future rank. Customers can also report a
+  **no-show**, which penalizes reliability harder than a decline.
+- **Price transparency** — estimated ZAR call-out ranges per trade shown before
+  the customer books, avoiding surprise pricing.
+- **Recurring maintenance scheduling** — agencies can set up recurring jobs
+  (garden, pool, inspections) on properties, not just reactive breakdowns.
+- **Reviews** — job-gated (can't review a job that doesn't exist or isn't
+  complete), feeds directly into the artisan's live rating.
 - **Webhook security** — verifies Meta's `X-Hub-Signature-256` HMAC on every POST.
 - **Dry-run mode** — no WhatsApp token? Outbound messages print to the console, so
   the full flow is testable locally with zero Meta setup.
@@ -89,27 +100,32 @@ URL as the callback.
 
 ```
 app/
-  main.py          FastAPI app: webhook, landing page, /stats
-  conversation.py  State machine (greeting → description → location → choice → booked)
-  classifier.py    Keyword + optional Claude job classification
-  matching.py      Haversine + weighted artisan scoring
-  whatsapp.py      Cloud API client, signature verification, payload parsing
-  models.py        SQLAlchemy models
-  db.py            Engine/session (SQLite locally, Supabase in prod)
-  seed.py          15 pilot artisans (Cape Town)
-  static/index.html  Themed landing page
-db/schema.sql      Canonical Postgres schema for Supabase
-tests/test_flow.py End-to-end tests (classifier, matching, full booking flow)
-render.yaml        One-click Render deployment
+  main.py             FastAPI app: webhook, landing page, agency dashboard, /stats
+  conversation.py     route_message() dispatches by identity; customer state machine
+  artisan_flow.py     Artisan ACCEPT/DECLINE/QUOTE/COMPLETE + auto-reassignment
+  customer_reviews.py Job-gated review submission, live rating recalculation
+  scheduling.py       Recurring maintenance jobs for agency properties
+  classifier.py       Keyword + optional Claude job classification
+  matching.py         Haversine + weighted scoring (distance/rating/tier/experience/reliability)
+  whatsapp.py         Cloud API client, signature verification, payload parsing
+  models.py           SQLAlchemy models
+  db.py               Engine/session (SQLite locally, Supabase in prod)
+  seed.py             15 pilot artisans + demo agency (Cape Town)
+  static/index.html   Themed landing page
+db/schema.sql         Canonical Postgres schema for Supabase
+tests/test_flow.py    22 end-to-end tests
+render.yaml            One-click Render deployment
+COMPETITIVE_ANALYSIS.md  What FixZA borrows/avoids from SweepSouth, Thumbtack,
+                         Angi, TaskRabbit, Urban Company — and why
+DEPLOY.md              Step-by-step production deployment checklist
 ```
 
 ## Roadmap
 
-- Artisan-side WhatsApp flow (accept/decline jobs, send quotes)
 - Payments (Payfast/Ozow escrow) + verification-cost recovery from first jobs
-- Review collection after job completion
 - Interactive WhatsApp list messages instead of "reply 1/2/3"
 - Power BI operational dashboard on `/stats`
+- Admin endpoints for agency/property/tenant onboarding (currently via Supabase table editor)
 - Expansion beyond the Cape Town pilot
 
 ## Legal / IP notes

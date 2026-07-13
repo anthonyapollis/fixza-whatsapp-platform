@@ -21,6 +21,8 @@ create table if not exists artisans (
                       check (verification_tier in ('bronze','silver','gold')),
     rating            double precision not null default 0,
     jobs_completed    integer not null default 0,
+    declines          integer not null default 0,
+    no_shows          integer not null default 0,
     active            integer not null default 1,
     created_at        timestamptz not null default now()
 );
@@ -49,6 +51,18 @@ create table if not exists tenants (
     name        varchar(120) not null default '',
     property_id bigint not null references properties(id)
 );
+
+create table if not exists recurring_schedules (
+    id              bigint generated always as identity primary key,
+    property_id     bigint not null references properties(id),
+    trade           varchar(40) not null,
+    description     text not null,
+    frequency_days  integer not null,
+    next_due_at     timestamptz not null,
+    active          integer not null default 1,
+    created_at      timestamptz not null default now()
+);
+create index if not exists idx_schedules_property on recurring_schedules (property_id);
 
 create table if not exists jobs (
     id           bigint generated always as identity primary key,

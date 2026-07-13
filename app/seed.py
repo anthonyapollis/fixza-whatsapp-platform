@@ -4,6 +4,7 @@ Usage:  python -m app.seed
 """
 from .db import SessionLocal, init_db
 from .models import Agency, Artisan, Property, Tenant
+from .scheduling import create_schedule
 
 ARTISANS = [
     # name, wa_id, trade, suburb, lat, lng, tier, rating, jobs
@@ -57,9 +58,14 @@ def run() -> None:
             Tenant(wa_id="27835550002", name="James Carter", property_id=props[1].id),
             Tenant(wa_id="27835550003", name="Aisha Patel", property_id=props[2].id),
         ])
+        db.flush()
+
+        # Demo recurring maintenance — the SweepSouth-style predictable revenue play
+        create_schedule(db, props[2].id, "garden", "Fortnightly garden service", 14)
+
         db.commit()
         print(f"Seeded {len(ARTISANS)} artisans, 1 agency, "
-              f"{len(props)} properties, 3 tenants.")
+              f"{len(props)} properties, 3 tenants, 1 recurring schedule.")
     finally:
         db.close()
 

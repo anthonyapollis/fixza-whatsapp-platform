@@ -17,11 +17,12 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from . import config
-from .artisan_flow import handle_artisan_message, send_job_offer
-from .conversation import handle_message
+from .artisan_flow import send_job_offer
+from .conversation import route_message
 from .customer_reviews import submit_review
 from .db import get_db, init_db
-from .models import Agency, Artisan, Customer, Job, MessageLog, utcnow
+from .models import Agency, Artisan, Customer, Job, MessageLog, RecurringSchedule, utcnow
+from .scheduling import create_schedule, run_due_schedules
 from .whatsapp import extract_messages, send_text, verify_signature
 
 logging.basicConfig(level=logging.INFO)
@@ -65,7 +66,7 @@ def mock_send(body: dict, db: Session = Depends(get_db)) -> dict:
     from_wa = body.get("from", "27831234567")
     text = body.get("text", "")
     msg = {"wa_id": from_wa, "name": "", "type": "text", "text": text}
-    replies = handle_message(db, msg)
+    replies = route_message(db, msg)
     db.commit()
     return {"from": from_wa, "text": text, "replies": replies}
 
@@ -81,7 +82,7 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)) -> di
         try:
             db.add(MessageLog(wa_id=msg["wa_id"], direction="in",
                               body=msg.get("text") or f"[{msg['type']}]"))
-            replies = handle_message(db, msg)
+            replies = route_message(db, msg)
             db.commit()
         except Exception:
             db.rollback()
@@ -184,6 +185,33 @@ def post_review(body: dict, db: Session = Depends(get_db)) -> dict:
     msg = submit_review(db, body.get("job_id"), body.get("stars", 0), body.get("comment", ""))
     db.commit()
     return {"message": msg}
+
+
+@app.post("/agency/{agency_id}/schedule", include_in_schema=False)
+def add_schedule(agency_id: int, body: dict, db: Session = Depends(get_db)) -> dict:
+    """Create a recurring maintenance schedule for a property.
+
+    Body: {"property_id": 1, "trade": "garden", "description": "Fortnightly
+    garden service", "frequency_days": 14}
+    """
+    schedule = create_schedule(
+        db,
+        property_id=body["property_id"],
+        trade=body["trade"],
+        description=body.get("description", ""),
+        frequency_days=body["frequency_days"],
+    )
+    db.commit()
+    return {"schedule_id": schedule.id, "next_due_at": schedule.next_due_at.isoformat()}
+
+
+@app.post("/admin/run-schedules", include_in_schema=False)
+def admin_run_schedules(db: Session = Depends(get_db)) -> dict:
+    """Trigger due recurring jobs. Call daily from an external cron
+    (Render's free tier has no background worker) — see DEPLOY.md."""
+    created = run_due_schedules(db)
+    db.commit()
+    return {"jobs_created": len(created), "job_ids": [j.id for j in created]}
 
 
 @app.get("/stats")

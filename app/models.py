@@ -38,6 +38,11 @@ class Artisan(Base):
     verification_tier: Mapped[str] = mapped_column(String(10), default="bronze")
     rating: Mapped[float] = mapped_column(Float, default=0.0)       # 0..5
     jobs_completed: Mapped[int] = mapped_column(Integer, default=0)
+    # Reliability tracking: declines and no-shows pull rank down over time.
+    # See COMPETITIVE_ANALYSIS.md — this is what Angi/Thumbtack never built,
+    # and it's why "top match" on those platforms doesn't mean "will show up."
+    declines: Mapped[int] = mapped_column(Integer, default=0)
+    no_shows: Mapped[int] = mapped_column(Integer, default=0)
     active: Mapped[int] = mapped_column(Integer, default=1)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
@@ -73,6 +78,27 @@ class Tenant(Base):
     wa_id: Mapped[str] = mapped_column(String(32), unique=True, index=True)
     name: Mapped[str] = mapped_column(String(120), default="")
     property_id: Mapped[int] = mapped_column(ForeignKey("properties.id"))
+
+    property: Mapped["Property"] = relationship()
+
+
+class RecurringSchedule(Base):
+    """Recurring maintenance for an agency property (garden, pool, inspection).
+
+    Applies the SweepSouth lesson (recurring bookings beat one-off jobs for
+    revenue predictability) to the B2B side instead of consumer subscriptions
+    — see COMPETITIVE_ANALYSIS.md.
+    """
+    __tablename__ = "recurring_schedules"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    property_id: Mapped[int] = mapped_column(ForeignKey("properties.id"), index=True)
+    trade: Mapped[str] = mapped_column(String(40))
+    description: Mapped[str] = mapped_column(Text)
+    frequency_days: Mapped[int] = mapped_column(Integer)
+    next_due_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    active: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     property: Mapped["Property"] = relationship()
 

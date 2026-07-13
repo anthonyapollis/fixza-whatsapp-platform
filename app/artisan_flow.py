@@ -1,7 +1,15 @@
-"""Artisan-side conversation: receive job offer, accept/decline, mark complete & review."""
+"""Artisan-side conversation: receive job offer, accept/decline, mark complete & review.
+
+DECLINE auto-reassigns to the next-best-ranked artisan instead of dead-ending
+the job — this is the fix for the gap Codex's version left as "an operator can
+contact the matched artisans." See COMPETITIVE_ANALYSIS.md: declines/no-shows
+also lower the artisan's future rank via matching.reliability_score, which no
+major incumbent (Angi/Thumbtack) actually does.
+"""
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from .matching import find_matches
 from .models import Artisan, Job, Quote, Review, utcnow
 
 
@@ -49,8 +57,10 @@ def handle_artisan_message(db: Session, wa_id: str, text: str) -> str:
         )
 
     if lowered == "decline":
-        pending_job.status = "cancelled"
-        return f"Declined FZ-{pending_job.id:05d}. We'll find another artisan."
+        artisan.declines = (artisan.declines or 0) + 1
+        return _reassign_or_cancel(
+            db, pending_job, exclude_artisan_id=artisan.id, reason="Declined"
+        )
 
     if lowered.startswith("quote "):
         try:
@@ -72,3 +82,41 @@ def handle_artisan_message(db: Session, wa_id: str, text: str) -> str:
         )
 
     return "Commands: ACCEPT, DECLINE, QUOTE <amount>, COMPLETE"
+
+
+def _reassign_or_cancel(
+    db: Session, job: Job, exclude_artisan_id: int, reason: str = "Declined"
+) -> str:
+    """Offer the job to the next-best artisan instead of dead-ending it.
+    Reliability penalties mean a repeat-decliner naturally sinks in future
+    rankings without needing a manual ban.
+    """
+    candidates = [
+        m for m in find_matches(db, job.trade, job.lat, job.lng, limit=5)
+        if m.artisan.id != exclude_artisan_id
+    ]
+    if not candidates:
+        job.status = "cancelled"
+        return f"{reason} FZ-{job.id:05d}. No other verified artisans are " \
+               "available nearby right now — the customer has been notified."
+
+    next_match = candidates[0]
+    job.artisan_id = next_match.artisan.id
+    job.status = "booked"
+    return (
+        f"{reason} FZ-{job.id:05d}. Reassigned to {next_match.artisan.name} "
+        f"({next_match.distance_km} km away)."
+    )
+
+
+def report_no_show(db: Session, job: Job) -> str:
+    """Customer-reported no-show: penalize the artisan and reopen the job."""
+    if not job.artisan:
+        return "No artisan is assigned to this job."
+    job.artisan.no_shows = (job.artisan.no_shows or 0) + 1
+    artisan_name = job.artisan.name
+    outcome = _reassign_or_cancel(
+        db, job, exclude_artisan_id=job.artisan_id, reason="No-show reported"
+    )
+    return f"Sorry to hear that. We've flagged {artisan_name} for a no-show " \
+           f"and lowered their ranking. {outcome}"

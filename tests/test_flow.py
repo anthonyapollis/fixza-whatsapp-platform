@@ -11,7 +11,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.classifier import classify
-from app.conversation import handle_message
+from app.conversation import handle_message, route_message
 from app.matching import find_matches, haversine_km
 from app.models import Agency, Artisan, Base, Job, Property, Tenant
 
@@ -163,33 +163,116 @@ def test_regular_customer_still_asked_for_location(db):
     assert "Where are you" in reply
 
 
+# --- webhook dispatch (identity-based routing) ---
+
+def test_route_message_sends_artisan_replies_to_artisan_flow(db):
+    """Regression test: a live smoke test caught DECLINE from a registered
+    artisan's wa_id being swallowed by the customer greeting flow because
+    the webhook called handle_message() directly instead of routing by
+    identity first. route_message() is the fix — it must never regress."""
+    sipho = db.query(Artisan).filter_by(name="Sipho Ndlovu").one()
+    job = Job(customer_id=1, artisan_id=sipho.id, description="test",
+              trade="plumbing", lat=-33.93, lng=18.43, status="booked")
+    db.add(job)
+    db.commit()
+
+    reply = route_message(db, _msg("DECLINE", wa=sipho.wa_id))[0]
+    assert "welcome" not in reply.lower()   # must NOT hit the customer greeting
+    assert "declined" in reply.lower()
+
+
+def test_route_message_still_greets_regular_customers(db):
+    reply = route_message(db, _msg("hi"))[0]
+    assert "Welcome" in reply
+
+
 # --- artisan flow ---
 
-def test_artisan_flow(db):
+def test_artisan_accept(db):
     from app.artisan_flow import handle_artisan_message
     artisan = db.query(Artisan).filter_by(trade="plumbing").first()
 
-    # Test accept
-    job1 = Job(customer_id=1, artisan_id=artisan.id, description="test1",
-               trade="plumbing", lat=-33.93, lng=18.43, status="booked")
-    db.add(job1)
+    job = Job(customer_id=1, artisan_id=artisan.id, description="test1",
+              trade="plumbing", lat=-33.93, lng=18.43, status="booked")
+    db.add(job)
     db.commit()
     reply = handle_artisan_message(db, artisan.wa_id, "ACCEPT")
     assert "accepted" in reply.lower()
     db.commit()
-    job1 = db.get(Job, job1.id)
-    assert job1.status == "accepted"
+    job = db.get(Job, job.id)
+    assert job.status == "accepted"
 
-    # Test decline on a new job
-    job2 = Job(customer_id=1, artisan_id=artisan.id, description="test2",
-               trade="plumbing", lat=-33.93, lng=18.43, status="booked")
-    db.add(job2)
+
+def test_artisan_decline_auto_reassigns(db):
+    """Declining doesn't dead-end the job — the next-best plumber gets it,
+    and the decliner's reliability score drops for future matching."""
+    from app.artisan_flow import handle_artisan_message
+    sipho = db.query(Artisan).filter_by(name="Sipho Ndlovu").one()
+    job = Job(customer_id=1, artisan_id=sipho.id, description="test2",
+              trade="plumbing", lat=-33.93, lng=18.43, status="booked")
+    db.add(job)
     db.commit()
-    reply = handle_artisan_message(db, artisan.wa_id, "DECLINE")
-    assert "declined" in reply.lower() or "decline" in reply.lower()
+
+    reply = handle_artisan_message(db, sipho.wa_id, "DECLINE")
+    assert "reassigned" in reply.lower()
     db.commit()
-    job2 = db.get(Job, job2.id)
-    assert job2.status == "cancelled"
+
+    job = db.get(Job, job.id)
+    assert job.status == "booked"
+    assert job.artisan_id != sipho.id       # handed to the next-best plumber
+
+    sipho = db.get(Artisan, sipho.id)
+    assert sipho.declines == 1
+
+
+def test_artisan_decline_no_alternative_cancels(db):
+    """With only one electrician in range, a decline has nowhere to go."""
+    from app.artisan_flow import handle_artisan_message
+    fatima = db.query(Artisan).filter_by(name="Fatima Adams").one()
+    job = Job(customer_id=1, artisan_id=fatima.id, description="test3",
+              trade="electrical", lat=-33.93, lng=18.43, status="booked")
+    db.add(job)
+    db.commit()
+
+    reply = handle_artisan_message(db, fatima.wa_id, "DECLINE")
+    assert "no other verified" in reply.lower()
+    db.commit()
+    job = db.get(Job, job.id)
+    assert job.status == "cancelled"
+
+
+def test_no_show_penalizes_and_reassigns(db):
+    """A customer-reported no-show hurts the artisan's reliability score
+    more than a decline does — see COMPETITIVE_ANALYSIS.md."""
+    sipho = db.query(Artisan).filter_by(name="Sipho Ndlovu").one()
+    job = Job(customer_id=1, artisan_id=sipho.id, description="test4",
+              trade="plumbing", lat=-33.93, lng=18.43, status="booked")
+    db.add(job)
+    db.commit()
+
+    reply = handle_message(db, _msg("noshow"))[0]
+    assert "no-show" in reply.lower() or "flagged" in reply.lower()
+
+    sipho = db.get(Artisan, sipho.id)
+    assert sipho.no_shows == 1
+
+
+def test_reliability_score_lowers_matching_rank(db):
+    """A heavily-declining artisan should rank below an equally-good rival."""
+    from app.matching import reliability_score, score_artisan
+    sipho = db.query(Artisan).filter_by(name="Sipho Ndlovu").one()
+    clean_score = score_artisan(sipho, distance_km=5.0)
+    sipho.declines = 5
+    penalized_score = score_artisan(sipho, distance_km=5.0)
+    assert penalized_score < clean_score
+    assert reliability_score(sipho) < 1.0
+
+
+def test_price_range_shown_in_match_message(db):
+    handle_message(db, _msg("hi"))
+    handle_message(db, _msg("my geyser is leaking badly"))
+    reply = handle_message(db, _msg("claremont"))[0]
+    assert "R350" in reply and "R650" in reply
 
 
 def test_customer_review(db):
@@ -205,3 +288,26 @@ def test_customer_review(db):
     artisan = db.get(Artisan, artisan.id)
     assert artisan.rating == 5.0
     assert artisan.jobs_completed == initial_jobs + 1
+
+
+# --- recurring maintenance scheduling ---
+
+def test_recurring_schedule_creates_job_when_due(db):
+    from app.scheduling import create_schedule, run_due_schedules
+    prop = db.query(Property).one()
+    schedule = create_schedule(db, prop.id, "garden", "Fortnightly garden service", 14)
+    db.commit()
+
+    created = run_due_schedules(db)
+    db.commit()
+
+    assert len(created) == 1
+    job = created[0]
+    assert job.trade == "garden"
+    assert job.agency_id == prop.agency_id
+    assert job.property_id == prop.id
+    assert "Scheduled" in job.description
+
+    # next_due_at rolled forward, so a second run finds nothing due yet
+    again = run_due_schedules(db)
+    assert len(again) == 0
