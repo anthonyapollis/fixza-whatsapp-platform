@@ -28,6 +28,11 @@ h2{font-size:20px;margin:0 0 18px}
 .note,.disclaimer{background:#fff;border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:14px 18px;margin:0 0 26px;line-height:1.6;color:var(--muted)}
 footer{border-top:1px solid var(--line);padding:22px 24px;color:var(--muted);font-size:13px}
 footer a{color:var(--accent)}
+
+.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr));gap:16px;margin:0 0 34px}
+figure.shot{margin:0;background:#fff;border:1px solid #e3e8e5;border-radius:10px;padding:12px}
+figure.shot img{width:100%;height:auto;display:block;border-radius:6px}
+figure.shot figcaption{font-size:14px;color:#5b6660;padding:8px 2px 0;line-height:1.5}
 </style>
 </head>
 <body>
@@ -39,6 +44,8 @@ footer a{color:var(--accent)}
 </div></header>
 <main><div class="wrap">
 <p class="note">FixZA runs as a FastAPI service rather than a static site, so there is no hosted preview here. The architecture, code and setup are in the repository.</p>
+<h2>See the work</h2>
+<div class="gallery"><figure class="shot"><img src="landing/whatsapp-booking.jpg" width="1440" height="900" alt="FixZA WhatsApp booking flow" loading="lazy"><figcaption>The customer journey: describe the problem on WhatsApp, share a suburb, pick from ranked verified artisans nearby and get a booking reference, all without installing an app.</figcaption></figure></div>
 </div></main>
 <footer><div class="wrap">Independent portfolio project by Anthony Apollis ·
 <a href="https://github.com/anthonyapollis/fixza-whatsapp-platform">Source repository</a> ·
